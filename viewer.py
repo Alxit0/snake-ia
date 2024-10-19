@@ -21,9 +21,9 @@ from viewer.common import Directions, Food, Snake, Stone, ScoreBoard, get_direct
 from viewer.sprites import SnakeSprite, FoodSprite, StoneSprite, ScoreBoardSprite
 
 
-async def main_loop(q):
+async def main_loop(q, SCALE):
     while True:
-        await main()
+        await main(SCALE)
 
 def should_quit():
     for event in pygame.event.get():
@@ -32,7 +32,7 @@ def should_quit():
             raise SystemExit
 
 
-async def main(SCALE=32):
+async def main(SCALE):
     logging.info("Waiting for map information from server")
     while True:
         try:
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--port", help="TCP port", type=int, default=PORT)
     args = parser.parse_args()
-    SCALE = args.scale
+    SCALE = 32 * (1/args.scale)
 
     LOOP = asyncio.get_event_loop()
     pygame.init()
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     try:
         LOOP.run_until_complete(
-            asyncio.gather(messages_handler(ws_path, q), main_loop(q))
+            asyncio.gather(messages_handler(ws_path, q), main_loop(q, SCALE=SCALE))
         )
     finally:
         LOOP.stop()
