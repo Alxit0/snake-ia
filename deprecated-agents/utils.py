@@ -1,18 +1,18 @@
+from copy import deepcopy
 from pprint import pprint
 from typing import Any, Dict, List, Tuple
 
 
-class TickSate:
+class GamePacket:
     def __init__(self, state: Dict[str, Any]):
         self.state = state
         
         # defaults
         self._body = None
+        self._food = None
         self._sight = None
-        self._range = None
         self._step = None
         self._traverse = None
-        self._score = None
             
     @property
     def body(self) -> List[Tuple[int, int]]:
@@ -22,19 +22,19 @@ class TickSate:
         return self._body 
     
     @property
+    def food(self) -> List[Tuple[int, int, str]]:
+        if self._food is None:
+            self._food = list(map(tuple, self.state.get('food', [])))
+        
+        return self._food 
+    
+    @property
     def sight(self) -> Dict[str, Dict[str, int]]:
         if self._sight is None:
             self._sight = self.state.get('sight', {})
         
         return self._sight 
     
-    @property
-    def range(self) -> int:
-        if self._range is None:
-            self._range = self.state.get('range', 1)
-        
-        return self._range 
-
     @property
     def step(self) -> int:
         if self._step is None:
@@ -48,13 +48,6 @@ class TickSate:
             self._traverse = self.state.get('traverse', True)
         
         return self._traverse 
-
-    @property
-    def score(self) -> int:
-        if self._score is None:
-            self._score = self.state.get('score', 0)
-        
-        return self._score
 
     def print(self):
         pprint(self.state, width=100)
