@@ -93,6 +93,7 @@ async def main(SCALE):
                 )
             else:
                 new_game = True
+                MAP = state['map']
 
         except asyncio.queues.QueueEmpty:
             await asyncio.sleep(0.1 / GAME_SPEED)
@@ -113,6 +114,7 @@ async def main(SCALE):
 
         # Update Stones
         if new_game:
+            stone_sprites.empty()
             for x, col in enumerate(MAP):
                 for y, pos in enumerate(col):
                     if pos == Tiles.STONE:

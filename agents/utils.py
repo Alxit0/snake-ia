@@ -1,5 +1,8 @@
+from copy import deepcopy
 from pprint import pprint
 from typing import Any, Dict, List, Tuple
+
+import numpy as np
 
 
 class TickSate:
@@ -13,6 +16,8 @@ class TickSate:
         self._step = None
         self._traverse = None
         self._score = None
+
+        self._processed_sight = None
             
     @property
     def body(self) -> List[Tuple[int, int]]:
@@ -27,6 +32,20 @@ class TickSate:
             self._sight = self.state.get('sight', {})
         
         return self._sight 
+    
+    @property
+    def processed_sight(self) -> Dict[Tuple[int, int], int]:
+        if self._processed_sight is not None:
+            return self._processed_sight
+
+        resp = {}
+        for y in self.sight:
+            y_int = int(y)
+            for x in self.sight[y]:
+                resp[y_int, int(x)] = self.sight[y][x]
+
+        self._processed_sight = resp
+        return self._processed_sight
     
     @property
     def range(self) -> int:
@@ -56,17 +75,61 @@ class TickSate:
         
         return self._score
 
-    def print(self):
-        pprint(self.state, width=100)
-    
-def print_maze(maze, food=None, snake_body=None):
-    # maze = deepcopy(maze)
-    # maze = [list(row) for row in zip(*maze)]
+    def print(self, *, width=100):
+        pprint(self.state, width=width)
+
+class Maze:
+    def __init__(self, maze: List[Tuple[int, int]]):
+        self.height = len(maze)
+        self.width = len(maze[0])
+
+        self.maze = np.asarray(maze, np.int8)
+
+        self._last_update = 0
+        
+    def update_maze(self, tick_info: TickSate):
+        # check if map already updated
+        if self._last_update >= tick_info.step:
+            return
+        self._last_update = tick_info.step
+        
+        # remove snake remenants
+        self.maze[self.maze == 4] = 0
+
+        # sight
+        for (y, x), val in tick_info.processed_sight.items():
+            self.maze[y, x] = val
+
+    def verbose_print(self, tick_info: TickSate = None):
+        inverse = lambda x: "\033[;7m" + x + '\033[0m'
+        normal = lambda x: x
+
+        sight_elems = tick_info.processed_sight if tick_info is not None else set()
+
+        maze = self.maze.transpose()
+
+        print("#"*(len(maze[0]) + 2))
+
+        for i, row in enumerate(maze):
+            print("#", end="")
+
+            for j, cell in enumerate(row):
+                color_f = inverse if (j, i) in sight_elems else normal
+
+                print(color_f(" #AFS?"[cell]), end='')
+                
+            print("#")
+        
+        print("#"*(len(maze[0]) + 2))
+
+
+def print_maze(maze, snake_body=None):
+    maze = deepcopy(maze)
+    maze = [list(row) for row in zip(*maze)]
 
     if snake_body is None:
         snake_body = []
 
-    print(f"height: {len(maze)}\nwidth: {len(maze[0])}")
     print("#"*(len(maze[0]) + 2))
 
     for i, row in enumerate(maze):
@@ -75,17 +138,45 @@ def print_maze(maze, food=None, snake_body=None):
         for j, cell in enumerate(row):
             if cell == 1:
                 print("#", end='')
-            elif food is not None and food == [i, j]:
-                print("A", end='')
-            elif (i, j) in snake_body or cell > 1:
+            elif (j, i) in snake_body or cell == 4:
                 print("S", end='')
-            elif cell < -5:
-                print("P", end='')
+            elif cell == -1:
+                print("?", end='')
             else:
                 print(" ", end='')
         print("#")
     
     print("#"*(len(maze[0]) + 2))
 
+def print_mazes(mazes, snake_bodys):
+    mazes = deepcopy(mazes)
 
-class Sepuku(Exception): ...
+    mazes = [[list(row) for row in zip(*maze)] for maze in mazes]
+
+    out = ['']*len(mazes[0])
+    top = "#"*(len(mazes[0][0]) + 2)
+    print(f"{top} "*len(mazes))
+    for maze, snake_body in zip(mazes, snake_bodys):
+        for i, row in enumerate(maze):
+            out[i] += "#"
+
+            for j, cell in enumerate(row):
+                if cell == 1:
+                    out[i] += "#"
+                elif cell == 2:
+                    out[i] += "A"
+                elif cell == 3:
+                    out[i] += "F"
+                elif (j, i) in snake_body or cell == 4:
+                    out[i] += "S"
+                elif cell == -1:
+                    out[i] += "?"
+                else:
+                    out[i] += " "
+            
+            out[i] += "# "
+
+    for i in out:
+        print(i)
+
+    print(f"{top} "*len(mazes))

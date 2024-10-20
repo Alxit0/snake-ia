@@ -5,3 +5,4 @@ aiohttp
 async-timeout
 websockets
 yarl
+numpy
