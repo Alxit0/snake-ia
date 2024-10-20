@@ -19,3 +19,6 @@ venv/
 
 # macOS generated files
 .DS_Store
+
+# my stuff
+temp*
